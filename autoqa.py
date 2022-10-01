@@ -4,22 +4,27 @@ QA
 
 # pylint: disable=E,W,C
 
+import time
 import random
 import configparser
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from utils.text_rewriting import rewrite
+from utils.text_rewriting import ReWrite
+
 
 class AutoQA:
     r"""
     Automatic question and answer
     """
 
-    def __init__(self):
+    def __init__(self, answer_num: int):
         self.user_info = {}
         self.urls = []
+        self.answered_num = 0
+        self.driver = None
+        self.answer_num = answer_num
         self.get_config()
-        self.driver = webdriver.Chrome()
+        self.rewrite = ReWrite().rewrite
 
     def get_config(self):
         r"""
@@ -42,18 +47,19 @@ class AutoQA:
         get urls
         """
         return self.urls
-
+    
     def get_driver(self):
         r"""
         get driver
         """
         return self.driver
 
-    def login_qapage(self):
+    def login_qapage(self, url:str):
         r"""
         login qapage
         """
-        self.driver.get(self.urls[0])
+        self.driver = webdriver.Chrome()
+        self.driver.get(url)
         input_username = self.driver.find_element(
             By.XPATH, '//*[@id="lUsername"]')
         input_passwordd = self.driver.find_element(
@@ -68,13 +74,33 @@ class AutoQA:
         r"""
         select question
         """
-        question_xpath = '//*[@id="app"]/div/div[2]/div[1]\
+        question_list_xpath = '//*[@id="app"]/div/div[2]/div[1]\
             /div/div[2]/div[1]/div/ul/li[@class="question-item"]'
-        # find_elements 返回的是列表，并且如果没匹配到，返回空列表
-        question = self.driver.find_elements(By.XPATH, question_xpath)
-        question[1].click()     
+        question_list = []
+        to_answer_question_num = self.answer_num
+        start_index = 0
+        # 如果已回答的问题数量达到设定值，退出循环
+        while self.answered_num < to_answer_question_num:
+            # find_elements 返回的是列表，并且如果没匹配到，返回空列表
+            question_list = self.driver.find_elements(By.XPATH, question_list_xpath)
+            question_list = question_list[start_index:] 
+            for question in question_list:
+                question.click()
+                self.get_answer()
+                # 在这里判断的原因是：to_answer_question_num 可能小于 len(question_list)
+                if self.answered_num >= to_answer_question_num:
+                    break
+            start_index = len(question_list)
+            # 模拟滚动 加载更多问题
+            js = 'document.querySelector("div.el-scrollbar__view").scrollIntoView(false)'
+            self.driver.execute_script(js)
+        print("=" * 50)
+        print("已完成当前课程的回答，5s后关闭窗口...")
+        time.sleep(5)
+        self.driver.close()
         
-    def get_answer(self): 
+    def get_answer(self):
+        time.sleep(3) 
         windows = self.driver.window_handles
         self.driver.switch_to.window(windows[-1])
 
@@ -96,7 +122,7 @@ class AutoQA:
                     answer_text_list.append(answer_text)
                 
                 final_answer_text_list = []
-                min_len = 31
+                min_len = 10
                 
                 while len(final_answer_text_list) == 0:
                     for answer in answer_text_list:
@@ -104,45 +130,58 @@ class AutoQA:
                             final_answer_text_list.append(answer)
                     min_len -= 5
 
-                print(len(final_answer_text_list))
+                # print(len(final_answer_text_list))
                 # print(final_answer_text_list)
                 random.shuffle(final_answer_text_list)
                 # print(final_answer_text_list)
                 is_answered[0].click()
+                self.input_answer(final_answer_text_list)
                 return final_answer_text_list
         else:
             print("已经回答过此问题！")
             self.driver.close()
             self.driver.switch_to.window(windows[0])
             return False
-
+        
     def input_answer(self, text_list: list):
         r"""
         input answer
         """
+        time.sleep(2)
         inputbox_xpath = '//*[@id="app"]/div/div\
             [@class="questionDialog ZHIHUISHU_QZMD"]/div/div/div[2]/div[1]/div[1]/div/textarea'
         inputbox = self.driver.find_elements(By.XPATH, inputbox_xpath)
-        inputbox[0].send_keys(text_list[0])
-
+        input_text = self.rewrite(text_list[0])
+        inputbox[0].send_keys(input_text)
+        self.submmit_answer()
+    
     def submmit_answer(self):
         r"""
         submmit answer
         """
-        submit_botton_xpath = '//*[@id="app"]/div/div\
-            [@class="questionDialog ZHIHUISHU_QZMD"]/div/div/div[2]/div[1]/div[2]/div'
-
-        submit_botton = self.driver.find_elements(By.XPATH, submit_botton_xpath)
-
-        # submit_botton[0].click()
-
-
-if __name__ == '__main__':
-    # AUTO_QA = AutoQA()
-    # print(AUTO_QA.get_urls()[0])
-    # print(type(AUTO_QA.get_urls()[0]))
-    # AUTO_QA.login_qapage()
-    # time.sleep(5)
-    # AUTO_QA.get_qa()
-    # print(AUTO_QA.get_urls())
-    pass
+        time.sleep(3)
+        self.answered_num += 1
+        self.driver.close()
+        windows = self.driver.window_handles
+        self.driver.switch_to.window(windows[-1])
+        
+    def run(self):
+        r"""
+        run
+        """
+        url_num = len(self.urls)
+        print(f"共 {url_num} 条 url 需要处理，浏览器窗口会启动 {url_num} 次！")
+        for url in self.urls:
+            self.login_qapage(url=url)
+            print("请在30s内完成登录验证码的输入并等待，否则自动回答无法进行！")
+            time.sleep(30)
+            print("-" * 50)
+            print("开始选取问题，并回答...")
+            print("-" * 50)
+            try:
+                self.select_question()
+            except Exception as e:
+                print(e)
+            finally:
+                print("！！脚本已终止！！")
+        print("！！！已完成所有链接回答！！!")
