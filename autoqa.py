@@ -89,7 +89,8 @@ class AutoQA:
                 time.sleep(10)
                 question.find_element(By.TAG_NAME, 'span').click()
                 self.get_answer()
-                # 在这里判断的原因是：to_answer_question_num 可能小于 len(question_list)
+                # 在这里判断的原因是：to_answer_questio
+                # n_num 可能小于 len(question_list)
                 if self.answered_num >= to_answer_question_num:
                     break
             start_index = len(question_list)
@@ -97,7 +98,7 @@ class AutoQA:
             js = 'document.querySelector("div.el-scrollbar__view").scrollIntoView(false)'
             self.driver.execute_script(js)
         print("*" * 50)
-        print("已完成当前课程的回答，10s后关闭窗口...")
+        print(f"已完成当前课程 {self.answer_num} 个问题的回答，10s 后关闭窗口...")
         time.sleep(10)
         self.driver.close()
 
@@ -175,19 +176,24 @@ class AutoQA:
         r"""
         run
         """
+        print("~" * 50)
+        print("！！！！！脚本开始运行！！！！！")
         url_num = len(self.urls)
+        print("*" * 50)
         print(f"共 {url_num} 条 url 需要处理，浏览器窗口会启动 {url_num} 次！")
         for url in self.urls:
             self.login_qapage(url=url)
-            print("请在30s内完成登录验证码的输入并等待，否则自动回答无法进行！")
+            print("请在 30s 内完成登录验证码的输入并等待，否则自动回答无法进行！")
             time.sleep(30)
             print("*" * 50)
             print("开始选取问题，并回答...")
-            print("*" * 50)
             try:
                 self.select_question()
-                print("！！！已完成所有链接回答！！!")
+                print("~" * 50)
+                print(">>>>>>>>>>！！！已完成所有课程回答！！！<<<<<<<<<<")
             except Exception as e:
+                print(">>>>>>>>>>！！！发生错误！！！<<<<<<<<<<")
                 print(e)
             finally:
-                print("！！脚本已终止！！")
+                print("~" * 50)
+                print("！！！！！脚本已终止运行！！！！！")

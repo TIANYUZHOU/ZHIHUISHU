@@ -92,7 +92,7 @@ class wsParam(object):
         self.APPID = config.get('API', 'APPID')
         self.APIKey = config.get('API', 'APIKey')
         self.APISecret = config.get('API', 'APISecret')
-        self.level = "<L5>"  # 改写等级 <L1>  ~  <L6>  等级越高，改写程度越深
+        self.level = "<L4>"  # 改写等级 <L1>  ~  <L6>  等级越高，改写程度越深
 
 
 class ReWrite:
@@ -143,6 +143,6 @@ class ReWrite:
             renew_text = eval(str(base64.b64decode(renew_text_list), 'utf-8'))
             # print("\n改写结果：", str(base64.b64decode(renew_text_list), 'utf-8'))
             print("=" * 50)
-            print("原答案:", text)
+            print("原答案：", text)
             print("改写后：", renew_text[0][0])
         return renew_text[0][0]
