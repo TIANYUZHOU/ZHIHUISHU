@@ -4,6 +4,7 @@ QA
 
 # pylint: disable=E,W,C
 
+import os
 import time
 import random
 import configparser
@@ -17,12 +18,16 @@ class AutoQA:
     Automatic question and answer
     """
 
-    def __init__(self, answer_num: int):
+    def __init__(self):
         self.user_info = {}
         self.urls = []
         self.answered_num = 0
         self.driver = None
-        self.answer_num = answer_num
+        self.answer_num = 0
+        self.start_index = 0
+        self.options = webdriver.ChromeOptions()
+        self.options.add_experimental_option(
+            'excludeSwitches', ['enable-logging'])
         self.get_config()
         self.rewrite = ReWrite().rewrite
 
@@ -35,6 +40,8 @@ class AutoQA:
         config.read(file, encoding="utf-8")
         self.user_info = eval(config.get('USER_INFO', 'USER_INFO'))
         self.urls = eval(config.get('URL', 'URLS'))
+        self.answer_num = int(config.get('ANSWER', 'ANSWER_NUM'))
+        self.start_index = int(config.get('QUESTION', 'START')) - 1
 
     def get_user_info(self):
         r"""
@@ -58,7 +65,7 @@ class AutoQA:
         r"""
         login qapage
         """
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(options=self.options)
         self.driver.get(url)
         input_username = self.driver.find_element(
             By.XPATH, '//*[@id="lUsername"]')
@@ -70,15 +77,20 @@ class AutoQA:
         input_passwordd.send_keys(self.user_info['password'])
         login_botton.click()
 
-    def select_question(self):
+    def answer_question(self):
         r"""
-        select question
+        answer question
         """
         question_list_xpath = '//*[@id="app"]/div/div[2]/div[1]\
             /div/div[2]/div[1]/div/ul/li[@class="question-item"]'
         question_list = []
         to_answer_question_num = self.answer_num
-        start_index = 0
+        start_index = self.start_index
+        for _ in range(start_index // 50):
+            # 模拟滚动 加载更多问题
+            js = 'document.querySelector("div.el-scrollbar__view").scrollIntoView(false)'
+            self.driver.execute_script(js)
+            time.sleep(2)
         # 如果已回答的问题数量达到设定值，退出循环
         while self.answered_num < to_answer_question_num:
             # find_elements 返回的是列表，并且如果没匹配到，返回空列表
@@ -86,7 +98,7 @@ class AutoQA:
                 By.XPATH, question_list_xpath)
             question_list = question_list[start_index:]
             for question in question_list:
-                time.sleep(10)
+                time.sleep(3)
                 question.find_element(By.TAG_NAME, 'span').click()
                 self.get_answer()
                 # 在这里判断的原因是：to_answer_questio
@@ -97,12 +109,15 @@ class AutoQA:
             # 模拟滚动 加载更多问题
             js = 'document.querySelector("div.el-scrollbar__view").scrollIntoView(false)'
             self.driver.execute_script(js)
-        print("*" * 50)
+        print("-" * 50)
         print(f"已完成当前课程 {self.answer_num} 个问题的回答，10s 后关闭窗口...")
-        time.sleep(10)
+        time.sleep(5)
         self.driver.close()
 
     def get_answer(self):
+        r"""
+        get answer
+        """
         time.sleep(3)
         windows = self.driver.window_handles
         self.driver.switch_to.window(windows[-1])
@@ -118,7 +133,7 @@ class AutoQA:
             if len(answers_list) == 0:
                 self.driver.close()
                 self.driver.switch_to.window(windows[0])
-                print("-" * 50)
+                print("<" * 50)
                 print("此问题目前还无人回答！")
                 return False
             else:
@@ -163,10 +178,11 @@ class AutoQA:
         r"""
         submmit answer
         """
-        time.sleep(5)
+        time.sleep(2)
         up_btn_list = self.driver.find_elements(
-            By.CSS_SELECTOR, "[class='up-btn ZHIHUISHU_QZMD set-btn']")
+            By.CSS_SELECTOR, "div.dialog-bottom > div.up-btn")
         up_btn_list[0].click()
+        time.sleep(2)
         self.answered_num += 1
         self.driver.close()
         windows = self.driver.window_handles
@@ -176,24 +192,30 @@ class AutoQA:
         r"""
         run
         """
-        print("~" * 50)
+        print("-" * 50)
         print("！！！！！脚本开始运行！！！！！")
         url_num = len(self.urls)
-        print("*" * 50)
+        print("-" * 50)
         print(f"共 {url_num} 条 url 需要处理，浏览器窗口会启动 {url_num} 次！")
         for url in self.urls:
             self.login_qapage(url=url)
-            print("请在 30s 内完成登录验证码的输入并等待，否则自动回答无法进行！")
-            time.sleep(30)
-            print("*" * 50)
-            print("开始选取问题，并回答...")
+            print("请在 15s 内完成登录验证码的输入并等待，否则自动回答无法进行！")
+            time.sleep(15)
+            print("-" * 50)
+            print("开始选取问题并回答...")
             try:
-                self.select_question()
-                print("~" * 50)
+                self.answer_question()
+                print("-" * 50)
                 print(">>>>>>>>>>！！！已完成所有课程回答！！！<<<<<<<<<<")
             except Exception as e:
                 print(">>>>>>>>>>！！！发生错误！！！<<<<<<<<<<")
                 print(e)
             finally:
-                print("~" * 50)
-                print("！！！！！脚本已终止运行！！！！！")
+                print("-" * 50)
+                print("<<<<<<<<<<！脚本已终止运行！>>>>>>>>>")
+
+
+if __name__ == "__main__":
+    autoqa = AutoQA()
+    autoqa.run()
+    os.system("pause")
