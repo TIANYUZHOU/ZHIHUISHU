@@ -130,5 +130,4 @@ dmypy.json
 
 # local
 test.ipynb
-urls.txt
-user_info.json
+run.ipynb
