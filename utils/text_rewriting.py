@@ -92,7 +92,7 @@ class wsParam(object):
         self.APPID = config.get('API', 'APPID')
         self.APIKey = config.get('API', 'APIKey')
         self.APISecret = config.get('API', 'APISecret')
-        self.level = "<L4>"  # 改写等级 <L1>  ~  <L6>  等级越高，改写程度越深
+        self.level = "<L3>"  # 改写等级 <L1>  ~  <L6>  等级越高，改写程度越深
 
 
 class ReWrite:
