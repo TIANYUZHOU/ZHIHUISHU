@@ -65,6 +65,7 @@ class AutoQA:
         r"""
         login qapage
         """
+        self.answered_num = 0   # 上个课程链接回答完毕需要清零
         self.driver = webdriver.Chrome(options=self.options)
         self.driver.get(url)
         input_username = self.driver.find_element(
@@ -110,9 +111,9 @@ class AutoQA:
             js = 'document.querySelector("div.el-scrollbar__view").scrollIntoView(false)'
             self.driver.execute_script(js)
         print("-" * 50)
-        print(f"已完成当前课程 {self.answer_num} 个问题的回答，10s 后关闭窗口...")
+        print(f"已完成当前课程 {self.answer_num} 个问题的回答，5s 后关闭浏览器...")
         time.sleep(5)
-        self.driver.close()
+        self.driver.quit()
 
     def get_answer(self):
         r"""
@@ -170,6 +171,7 @@ class AutoQA:
         inputbox_xpath = '//*[@id="app"]/div/div\
             [@class="questionDialog ZHIHUISHU_QZMD"]/div/div/div[2]/div[1]/div[1]/div/textarea'
         inputbox = self.driver.find_elements(By.XPATH, inputbox_xpath)
+        # print("-------before rewrite------")
         input_text = self.rewrite(text_list[0])
         inputbox[0].send_keys(input_text)
         self.submmit_answer()
@@ -196,7 +198,8 @@ class AutoQA:
         print("！！！！！脚本开始运行！！！！！")
         url_num = len(self.urls)
         print("-" * 50)
-        print(f"共 {url_num} 条 url 需要处理，浏览器窗口会启动 {url_num} 次！")
+        print(f"共 {url_num} 条 url 需要处理，浏览器会启动 {url_num} 次！")
+        print(f">>>>>！请注意需要输入 {url_num} 次验证码！<<<<<")
         for url in self.urls:
             self.login_qapage(url=url)
             print("请在 15s 内完成登录验证码的输入并等待，否则自动回答无法进行！")
@@ -206,13 +209,14 @@ class AutoQA:
             try:
                 self.answer_question()
                 print("-" * 50)
-                print(">>>>>>>>>>！！！已完成所有课程回答！！！<<<<<<<<<<")
+                print(">>>>>>>>>>！！！已关闭浏览器！！！<<<<<<<<<<")
             except Exception as e:
                 print(">>>>>>>>>>！！！发生错误！！！<<<<<<<<<<")
                 print(e)
-            finally:
-                print("-" * 50)
                 print("<<<<<<<<<<！脚本已终止运行！>>>>>>>>>")
+        print("-" * 50)
+        print(">>>>>>>>>>！！！已完成所有课程回答！！！<<<<<<<<<<")
+        print("<<<<<<<<<<！脚本已终止运行！>>>>>>>>>")
 
 
 if __name__ == "__main__":

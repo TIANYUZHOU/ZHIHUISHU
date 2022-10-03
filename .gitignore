@@ -132,3 +132,4 @@ dmypy.json
 test.ipynb
 run.ipynb
 qa.ico
+config/config.ini
