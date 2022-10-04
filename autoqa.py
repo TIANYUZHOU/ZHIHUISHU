@@ -10,6 +10,7 @@ import random
 import configparser
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from utils.text_rewriting import ReWrite
 
 
@@ -66,7 +67,9 @@ class AutoQA:
         login qapage
         """
         self.answered_num = 0   # 上个课程链接回答完毕需要清零
-        self.driver = webdriver.Chrome(options=self.options)
+        service = Service("./webdriver/chromedriver.exe")
+        self.driver = webdriver.Chrome(
+            service=service, options=self.options)
         self.driver.get(url)
         input_username = self.driver.find_element(
             By.XPATH, '//*[@id="lUsername"]')
