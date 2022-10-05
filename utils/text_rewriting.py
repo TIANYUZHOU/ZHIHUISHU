@@ -142,7 +142,11 @@ class ReWrite:
             renew_text_list = json_result['payload']['result']['text']
             renew_text = eval(str(base64.b64decode(renew_text_list), 'utf-8'))
             # print("\n改写结果：", str(base64.b64decode(renew_text_list), 'utf-8'))
+            final_text = ""
+            for text_list in renew_text:
+                final_text += text_list[0] + '\n'
+            final_text = final_text[:-2]
             print("=" * 50)
             print("原答案：", text)
-            print("改写后：", renew_text[0][0])
-        return renew_text[0][0]
+            print("改写后：", final_text)
+        return final_text
